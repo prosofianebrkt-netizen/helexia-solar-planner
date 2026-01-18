@@ -1,10 +1,9 @@
 
-const CACHE_NAME = 'helexia-v1';
+const CACHE_NAME = 'helexia-v2';
 const ASSETS = [
   './',
   './index.html',
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
