@@ -1,179 +1,92 @@
 
-import React, { useState, useEffect } from 'react';
-import { Project, ProjectType, ProjectMode, ConnectionType, PhaseOverride } from '../types';
-import { calculatePhases } from '../services/scheduler';
+import React, { useState, useEffect } from 'https://esm.sh/react@19.0.0';
+import { Project, ProjectType, ProjectMode, ConnectionType } from '../types.ts';
+import { calculatePhases } from '../services/scheduler.ts';
 
-interface ProjectFormProps {
-  onAdd: (project: Project) => void;
-  initialProject?: Project;
-  onCancel?: () => void;
-}
-
-const ProjectForm: React.FC<ProjectFormProps> = ({ onAdd, initialProject, onCancel }) => {
+const ProjectForm = ({ onAdd, initialProject, onCancel }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    name: 'SITE SOLAR HX',
     powerKwc: 500,
     type: ProjectType.TOITURE_NEUVE,
     mode: ProjectMode.EPC_SIMPLE,
     connection: ConnectionType.INJECTION,
     signatureDate: new Date().toISOString().split('T')[0],
     isSubcontracted: false,
-    overrides: {} as Record<string, PhaseOverride>
+    overrides: {}
   });
 
   useEffect(() => {
     if (initialProject) {
       setFormData({
-        name: initialProject.name,
-        powerKwc: initialProject.powerKwc,
-        type: initialProject.type,
-        mode: initialProject.mode,
-        connection: initialProject.connection,
-        signatureDate: initialProject.signatureDate.toISOString().split('T')[0],
-        isSubcontracted: initialProject.isSubcontracted,
-        overrides: initialProject.overrides || {},
+        ...initialProject,
+        signatureDate: new Date(initialProject.signatureDate).toISOString().split('T')[0]
       });
-    } else {
-      setFormData(prev => ({ ...prev, name: 'NOUVEAU SITE SOLAR' }));
     }
   }, [initialProject]);
 
-  const togglePhase = (phaseId: string) => {
-    const current = formData.overrides[phaseId] || { enabled: true };
-    setFormData({
-      ...formData,
-      overrides: {
-        ...formData.overrides,
-        [phaseId]: { ...current, enabled: !current.enabled }
-      }
-    });
-  };
-
-  const updatePhaseDuration = (phaseId: string, duration: number) => {
-    const current = formData.overrides[phaseId] || { enabled: true };
-    setFormData({
-      ...formData,
-      overrides: {
-        ...formData.overrides,
-        [phaseId]: { ...current, manualDuration: duration }
-      }
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const signatureDateObj = new Date(formData.signatureDate);
-    const newProject: Project = {
+    const sigDate = new Date(formData.signatureDate);
+    const newProject = {
+      ...formData,
       id: initialProject?.id || crypto.randomUUID(),
-      name: formData.name.toUpperCase(),
-      powerKwc: formData.powerKwc,
-      type: formData.type,
-      mode: formData.mode,
-      connection: formData.connection,
-      signatureDate: signatureDateObj,
-      isSubcontracted: formData.isSubcontracted,
-      overrides: formData.overrides,
-      phases: calculatePhases({
-        ...formData,
-        signatureDate: signatureDateObj
-      })
+      signatureDate: sigDate,
+      phases: calculatePhases({ ...formData, signatureDate: sigDate })
     };
     onAdd(newProject);
+    if (!initialProject) setFormData(prev => ({ ...prev, name: 'SITE SOLAR HX ' + (Math.floor(Math.random()*100)) }));
   };
 
-  const inputClass = "w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-helexia-green/50 focus:bg-white rounded-xl outline-none transition-all text-[12px] font-black text-helexia-blue uppercase tracking-tight italic";
-  const labelClass = "block text-[9px] font-black text-slate-400 mb-1.5 uppercase tracking-[0.2em] ml-1 italic";
-
-  const tasks = [
-    { id: 'negociation', name: 'Négociation' },
-    { id: 'urbanisme', name: 'Urbanisme' },
-    { id: 'cre', name: 'AO CRE' },
-    { id: 'bail', name: 'Gestion Bail' },
-    { id: 'raccordement', name: 'Raccordement' },
-    { id: 'construction', name: 'Construction' },
-    { id: 'exploitation', name: 'Exploitation' },
-  ];
+  const inputClass = "w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-black uppercase outline-none focus:border-helexia-green transition-all";
+  const labelClass = "text-[9px] font-black uppercase opacity-40 mb-1 block ml-2";
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card rounded-[2.5rem] soft-shadow p-8 border border-white/10 animate-fade relative overflow-hidden">
-      <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-5">
-        <div className="flex items-center gap-4">
-            <div className="w-1 h-8 bg-helexia-green rounded-full" />
-            <h2 className="text-xl font-black text-helexia-blue tracking-tighter uppercase italic">
-                Project Config
-            </h2>
+    <div className="glass-card rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-helexia-green/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+      <h2 className="text-xl font-black uppercase italic mb-6 flex items-center gap-3">
+        <span className="w-1 h-6 bg-helexia-green rounded-full"></span> Configuration Site
+      </h2>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className={labelClass}>Nom du Projet</label>
+          <input type="text" className={inputClass} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} />
         </div>
-        {onCancel && (
-            <button type="button" onClick={onCancel} className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Annuler</button>
-        )}
-      </div>
-
-      <div className="space-y-5">
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-8">
-            <label className={labelClass}>Identifiant Site</label>
-            <input type="text" className={inputClass} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-          </div>
-          <div className="col-span-4">
-            <label className={labelClass}>kWc</label>
-            <input type="number" className={inputClass} value={formData.powerKwc} onChange={e => setFormData({ ...formData, powerKwc: Number(e.target.value) })} />
-          </div>
-        </div>
-
+        
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Technologie</label>
-            <select className={inputClass} value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as ProjectType })}>
-              {Object.values(ProjectType).map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            <label className={labelClass}>Puissance (kWc)</label>
+            <input type="number" className={inputClass} value={formData.powerKwc} onChange={e => setFormData({...formData, powerKwc: parseInt(e.target.value)})} />
           </div>
           <div>
             <label className={labelClass}>Signature T0</label>
-            <input type="date" className={inputClass} value={formData.signatureDate} onChange={e => setFormData({ ...formData, signatureDate: e.target.value })} />
+            <input type="date" className={inputClass} value={formData.signatureDate} onChange={e => setFormData({...formData, signatureDate: e.target.value})} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Modèle Affaire</label>
-            <select className={inputClass} value={formData.mode} onChange={e => setFormData({ ...formData, mode: e.target.value as ProjectMode })}>
-              {Object.values(ProjectMode).map(m => <option key={m} value={m}>{m}</option>)}
+            <label className={labelClass}>Type</label>
+            <select className={inputClass} value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+              {Object.values(ProjectType).map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
           <div>
-            <label className={labelClass}>Raccordement</label>
-            <select className={inputClass} value={formData.connection} onChange={e => setFormData({ ...formData, connection: e.target.value as ConnectionType })}>
-              {Object.values(ConnectionType).map(c => <option key={c} value={c}>{c}</option>)}
+            <label className={labelClass}>Modèle</label>
+            <select className={inputClass} value={formData.mode} onChange={e => setFormData({...formData, mode: e.target.value})}>
+              {Object.values(ProjectMode).map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
         </div>
 
-        <div className="pt-5 border-t border-slate-100">
-            <h3 className="text-[10px] font-black text-helexia-blue uppercase tracking-[0.2em] mb-4 italic">Hypothèses Planning</h3>
-            <div className="grid grid-cols-2 gap-2">
-                {tasks.map(task => {
-                    const override = formData.overrides[task.id];
-                    const isEnabled = override ? override.enabled : true;
-                    return (
-                        <div key={task.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${isEnabled ? 'bg-slate-50' : 'bg-slate-50/20 opacity-40'}`}>
-                            <div className="flex items-center gap-2">
-                                <button type="button" onClick={() => togglePhase(task.id)} className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${isEnabled ? 'bg-helexia-green border-helexia-green' : 'bg-white border-slate-300'}`}>
-                                    {isEnabled && <svg className="w-2.5 h-2.5 text-helexia-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={6} d="M5 13l4 4L19 7" /></svg>}
-                                </button>
-                                <span className="text-[9px] font-black text-helexia-blue uppercase italic truncate">{task.name}</span>
-                            </div>
-                            <input type="number" disabled={!isEnabled} className="w-8 bg-white border rounded px-1 py-1 text-[8px] font-black text-center outline-none" value={override?.manualDuration || ''} onChange={e => updatePhaseDuration(task.id, Number(e.target.value))} />
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-
-        <button type="submit" className="w-full bg-helexia-green text-helexia-blue font-black py-4 rounded-2xl shadow-lg hover:shadow-helexia-green/20 transition-all text-[11px] uppercase tracking-widest italic btn-premium">
-           Générer Matrix Master
+        <button type="submit" className="w-full bg-helexia-green text-helexia-blue py-4 rounded-2xl font-black uppercase italic tracking-widest text-[11px] shadow-lg hover:shadow-helexia-green/20 transition-all active:scale-95">
+          {initialProject ? 'Mettre à jour' : 'Générer Master Plan'}
         </button>
-      </div>
-    </form>
+        {onCancel && (
+          <button type="button" onClick={onCancel} className="w-full text-[9px] font-black uppercase tracking-widest opacity-30 mt-2">Annuler</button>
+        )}
+      </form>
+    </div>
   );
 };
 

@@ -4,15 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helexia Solar Planner</title>
+    <title>Helexia Solar Planner | Master</title>
     <meta name="theme-color" content="#003d5b">
     <link rel="manifest" href="manifest.json">
     
-    <!-- Tailwind & Scripts tiers -->
+    <!-- Framework & Utilities -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
-    
-    <!-- Compilateur Babel pour transformer le TSX directement (évite l'erreur MIME type) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -20,33 +17,29 @@
     <style>
         :root {
             --helexia-blue: #003d5b;
-            --helexia-blue-dark: #002a3f;
             --helexia-green: #a4cd39;
-            --helexia-green-light: #c5e66d;
         }
         body {
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top right, #004d73 0%, #002a3f 100%);
             background-attachment: fixed;
-            color: var(--helexia-blue);
             min-height: 100vh;
             margin: 0;
-            overflow-x: hidden;
+            color: white;
+        }
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.98); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: var(--helexia-blue);
         }
         .bg-gradient-acid { background: linear-gradient(135deg, #a4cd39 0%, #85aa2a 100%); }
-        .soft-shadow { box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5); }
-        .glass-card { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .restricted-bg {
             background: repeating-linear-gradient(45deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.07) 10px, rgba(0,0,0,0.07) 20px);
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade { animation: fadeIn 0.6s ease-out forwards; }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
     </style>
-
-    <!-- Configuration Babel pour charger React via ESM -->
-    <script type="text/javascript">
-      window.process = { env: { NODE_ENV: 'production' } };
-    </script>
 <script type="importmap">
 {
   "imports": {
@@ -58,31 +51,32 @@
 </script>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="flex items-center justify-center h-screen">
+            <div class="text-center">
+                <div class="w-16 h-16 border-4 border-t-helexia-green border-white/10 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-[10px] uppercase tracking-widest font-black opacity-50">Chargement Matrix Master...</p>
+            </div>
+        </div>
+    </div>
 
-    <!-- On charge index.tsx en tant que script Babel avec imports automatiques -->
-    <script type="text/babel" data-type="module" data-presets="react,typescript">
+    <!-- Configuration de l'environnement -->
+    <script type="text/javascript">
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
+    <!-- Point d'entrée de l'application -->
+    <script type="text/babel" data-type="module">
       import React from 'https://esm.sh/react@19.0.0';
       import ReactDOM from 'https://esm.sh/react-dom@19.0.0/client';
       import App from './App.tsx';
 
-      const rootElement = document.getElementById('root');
-      if (rootElement) {
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(
-          <React.StrictMode>
-            <App />
-          </React.StrictMode>
-        );
-      }
-    </script>
-
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
-        });
-      }
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
     </script>
 </body>
 </html>
