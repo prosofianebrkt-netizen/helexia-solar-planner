@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
-import { Project } from './types';
-import ProjectForm from './components/ProjectForm';
-import GanttChart from './components/GanttChart';
-import { formatMonth } from './constants';
+import React, { useState, useEffect } from 'https://esm.sh/react@19.0.0';
+import ProjectForm from './components/ProjectForm.tsx';
+import GanttChart from './components/GanttChart.tsx';
+import { formatMonth } from './constants.tsx';
 
-const App: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+// On définit les types ici si types.ts n'est pas résolu
+const App = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
@@ -34,15 +34,15 @@ const App: React.FC = () => {
     }
   };
 
-  const [projects, setProjects] = useState<Project[]>(() => {
+  const [projects, setProjects] = useState(() => {
     const saved = localStorage.getItem('helexia_projects');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.map((p: any) => ({
+        return parsed.map((p) => ({
           ...p,
           signatureDate: new Date(p.signatureDate),
-          phases: p.phases.map((ph: any) => ({
+          phases: p.phases.map((ph) => ({
             ...ph,
             startDate: new Date(ph.startDate),
             endDate: new Date(ph.endDate)
@@ -53,14 +53,14 @@ const App: React.FC = () => {
     return [];
   });
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt'>('dashboard');
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [editingProject, setEditingProject] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('helexia_projects', JSON.stringify(projects));
   }, [projects]);
 
-  const addOrUpdateProject = (project: Project) => {
+  const addOrUpdateProject = (project) => {
     setProjects(prev => {
       const exists = prev.find(p => p.id === project.id);
       if (exists) return prev.map(p => p.id === project.id ? project : p);
@@ -69,7 +69,7 @@ const App: React.FC = () => {
     setEditingProject(null);
   };
 
-  const removeProject = (id: string) => {
+  const removeProject = (id) => {
     if (window.confirm("Supprimer ce site ?")) {
       setProjects(prev => prev.filter(p => p.id !== id));
     }
@@ -118,7 +118,7 @@ const App: React.FC = () => {
               <div className="bg-gradient-acid p-10 rounded-[2.5rem] soft-shadow text-helexia-blue relative overflow-hidden group">
                 <div className="relative z-10">
                   <div className="text-[10px] font-black uppercase tracking-[0.4em] mb-4 opacity-70">Puissance Totale</div>
-                  <div className="text-6xl font-black tracking-tighter mb-2 italic leading-none">{projects.reduce((acc, p) => acc + p.powerKwc, 0).toLocaleString()} <span className="text-xl opacity-60 not-italic uppercase ml-2">kWc</span></div>
+                  <div className="text-6xl font-black tracking-tighter mb-2 italic leading-none">{projects.reduce((acc, p) => acc + (p.powerKwc || 0), 0).toLocaleString()} <span className="text-xl opacity-60 not-italic uppercase ml-2">kWc</span></div>
                   <p className="text-[9px] font-black uppercase tracking-widest opacity-50 italic">{projects.length} Sites Planifiés</p>
                 </div>
               </div>
