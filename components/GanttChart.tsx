@@ -73,12 +73,12 @@ const GanttChart: React.FC<GanttChartProps> = ({ projects }) => {
           </button>
         </div>
         
-        {/* Légende avec fond blanc léger pour lisibilité */}
-        <div className="flex flex-wrap gap-4 bg-white/10 p-3 rounded-2xl border border-white/10 backdrop-blur-md">
+        {/* Légende avec fond blanc léger amélioré */}
+        <div className="flex flex-wrap gap-4 bg-white/90 p-3 px-5 rounded-2xl border border-white/20 shadow-xl backdrop-blur-md">
           {Object.entries(COLORS.PHASES).map(([key, color]) => (
             <div key={key} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-sm shadow-sm" style={{ backgroundColor: color }} />
-              <span className="text-[8px] font-black text-white uppercase italic tracking-wider">
+              <span className="text-[8px] font-black text-helexia-blue uppercase italic tracking-wider">
                 {key === 'NEGOTIATION' ? 'Négociation' : key}
               </span>
             </div>
@@ -105,7 +105,6 @@ const GanttChart: React.FC<GanttChartProps> = ({ projects }) => {
             </div>
           </div>
 
-          {/* Body */}
           <div className="divide-y divide-slate-50">
             {projects.map((project, idx) => (
               <React.Fragment key={project.id}>
@@ -153,7 +152,6 @@ const GanttChart: React.FC<GanttChartProps> = ({ projects }) => {
                           
                           {!isExp ? (
                             <>
-                              {/* Date Début Désaxée (Dessous) */}
                               <span className="absolute top-full mt-1.5 left-0 -translate-x-1/2 text-[6px] font-black text-slate-500 italic uppercase bg-white/80 px-1 rounded shadow-sm">
                                 {formatMonth(ph.startDate)}
                               </span>
@@ -163,7 +161,6 @@ const GanttChart: React.FC<GanttChartProps> = ({ projects }) => {
                                 {Math.round(ph.durationMonths)}M
                               </div>
 
-                              {/* Jalon positionné à la FIN (End Date) - Alignement GAUCHE du jalon sur la fin de tâche */}
                               {ph.isMilestone && (
                                 <div className="absolute top-1/2 -translate-y-1/2 left-full flex items-center gap-1.5 z-20">
                                   <div className="w-3 h-3 bg-helexia-green border-2 border-helexia-blue rotate-45 shadow-md shrink-0" />
@@ -173,13 +170,11 @@ const GanttChart: React.FC<GanttChartProps> = ({ projects }) => {
                                 </div>
                               )}
 
-                              {/* Date Fin Désaxée (Dessous) */}
                               <span className="absolute top-full mt-1.5 left-full -translate-x-1/2 text-[6px] font-black text-slate-500 italic uppercase bg-white/80 px-1 rounded shadow-sm">
                                 {formatMonth(ph.endDate)}
                               </span>
                             </>
                           ) : (
-                            /* Jalon COD positionné à la date de début de l'exploitation */
                             <div className="flex items-center gap-2">
                                <div className="w-4 h-4 bg-helexia-green border-2 border-helexia-blue rotate-45 shadow-lg shrink-0" />
                                <div className="flex flex-col">

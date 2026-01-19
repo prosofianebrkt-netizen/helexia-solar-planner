@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'https://esm.sh/react@19.0.0';
 import ProjectForm from './components/ProjectForm.js';
 import GanttChart from './components/GanttChart.js';
 

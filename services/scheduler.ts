@@ -18,8 +18,6 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
   } = params;
 
   const phases: Phase[] = [];
-  
-  // Point de départ T0
   let currentPointer = new Date(signatureDate);
 
   const getPhaseConfig = (id: string, defaultEnabled: boolean, defaultDuration: number) => {
@@ -45,7 +43,6 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
   // 2. URBANISME
   const urbDefaultDur = (type === ProjectType.TOITURE_NEUVE || powerKwc > 3000 ? 6 : 4);
   const urb = getPhaseConfig('urbanisme', true, urbDefaultDur);
-  
   let urbanismeEndDate = new Date(currentPointer);
   if (urb.enabled) {
     urbanismeEndDate = addMonths(currentPointer, urb.duration);
@@ -72,7 +69,7 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
   
   currentPointer = new Date(urbanismeEndDate);
 
-  // 3. SÉCURISATION (AO CRE & Bail)
+  // 3. SÉCURISATION (En parallèle après Urba)
   const creDefaultEnabled = powerKwc > 100 && connection === ConnectionType.INJECTION;
   const cre = getPhaseConfig('cre', creDefaultEnabled, 4);
   let creEndDate = new Date(currentPointer);
@@ -106,10 +103,8 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     });
   }
 
-  // Raccordement dépend d'Urba + CRE
+  // 4. RACCORDEMENT (Dépend d'Urba + AO CRE, mais PAS du bail)
   const raccordementStartDate = new Date(Math.max(currentPointer.getTime(), creEndDate.getTime()));
-
-  // 4. RACCORDEMENT
   let raccDefaultDur = 6;
   if (connection === ConnectionType.INJECTION) {
     if (powerKwc <= 36) raccDefaultDur = 6;
@@ -132,7 +127,7 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     });
   }
 
-  // 5. CONSTRUCTION
+  // 5. CONSTRUCTION (Pilotée par le raccordement, verrouillée par la sécurisation totale)
   const securityLockDate = new Date(Math.max(creEndDate.getTime(), bailEndDate.getTime()));
   let constrWorkMonths = powerKwc > 1000 ? 12 : (powerKwc >= 600 ? 6 : 4);
   const cons = getPhaseConfig('construction', true, constrWorkMonths);
@@ -167,10 +162,10 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     });
   }
 
-  // 6. EXPLOITATION (COD = Raccordement Terminé + 1 Mois de levée de réserves/consuel)
+  // 6. EXPLOITATION (COD = Fin Raccordement + 1 mois)
   const exp = getPhaseConfig('exploitation', true, 12); 
   if (exp.enabled) {
-    const codDate = addMonths(raccEndDate, 1); // La COD intervient 1 mois après la fin administrative du raccordement
+    const codDate = addMonths(raccEndDate, 1);
     phases.push({
       id: 'exploitation',
       name: 'Exploitation',
@@ -178,7 +173,7 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
       durationMonths: exp.duration,
       endDate: addMonths(codDate, exp.duration),
       color: COLORS.PHASES.EXPLOITATION,
-      isMilestone: true // Marqué comme jalon pour le Gantt
+      isMilestone: true
     });
   }
 
