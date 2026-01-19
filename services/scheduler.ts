@@ -19,7 +19,7 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
 
   const phases: Phase[] = [];
   
-  // Le point de départ réel est la signature T0
+  // Point de départ T0
   let currentPointer = new Date(signatureDate);
 
   const getPhaseConfig = (id: string, defaultEnabled: boolean, defaultDuration: number) => {
@@ -29,7 +29,7 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     return { enabled, duration };
   };
 
-  // 1. NÉGOCIATION (Antérieure à T0)
+  // 1. NÉGOCIATION
   const neg = getPhaseConfig('negociation', true, 0.5);
   if (neg.enabled) {
     phases.push({
@@ -42,42 +42,37 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     });
   }
 
-  // 2. URBANISME (Verrou n°1 : Rien ne démarre avant)
+  // 2. URBANISME
   const urbDefaultDur = (type === ProjectType.TOITURE_NEUVE || powerKwc > 3000 ? 6 : 4);
   const urb = getPhaseConfig('urbanisme', true, urbDefaultDur);
   
-  let urbanismeEndDate: Date;
+  let urbanismeEndDate = new Date(currentPointer);
   if (urb.enabled) {
-    const start = new Date(currentPointer);
-    urbanismeEndDate = addMonths(start, urb.duration);
+    urbanismeEndDate = addMonths(currentPointer, urb.duration);
     phases.push({
       id: 'urbanisme',
       name: 'Urbanisme',
-      startDate: start,
+      startDate: new Date(currentPointer),
       durationMonths: urb.duration,
       endDate: urbanismeEndDate,
       color: COLORS.PHASES.URBANISME
     });
   } else {
-    // Si pas d'urbanisme complet, audit obligatoire de 20 jours
-    const auditDuration = 0.66; 
-    const start = new Date(currentPointer);
-    urbanismeEndDate = addMonths(start, auditDuration);
+    const auditDur = 0.66;
+    urbanismeEndDate = addMonths(currentPointer, auditDur);
     phases.push({
       id: 'audit_urb',
       name: 'Vérification Urbanisme',
-      startDate: start,
-      durationMonths: auditDuration,
+      startDate: new Date(currentPointer),
+      durationMonths: auditDur,
       endDate: urbanismeEndDate,
-      color: '#94a3b8',
-      isMilestone: true
+      color: '#cbd5e1'
     });
   }
   
-  // Après l'urbanisme, on peut lancer le reste
   currentPointer = new Date(urbanismeEndDate);
 
-  // 3. AO CRE (Parallèle au Bail, après Urbanisme)
+  // 3. SÉCURISATION (AO CRE & Bail)
   const creDefaultEnabled = powerKwc > 100 && connection === ConnectionType.INJECTION;
   const cre = getPhaseConfig('cre', creDefaultEnabled, 4);
   let creEndDate = new Date(currentPointer);
@@ -94,16 +89,16 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     });
   }
 
-  // 4. BAIL (Parallèle au CRE, après Urbanisme)
   const bailDefaultEnabled = mode === ProjectMode.TIERS_INVEST;
   const bail = getPhaseConfig('bail', bailDefaultEnabled, 4);
   let bailEndDate = new Date(currentPointer);
   if (bail.enabled) {
-    bailEndDate = addMonths(currentPointer, bail.duration);
+    const bailStart = new Date(currentPointer);
+    bailEndDate = addMonths(bailStart, bail.duration);
     phases.push({
       id: 'bail',
       name: 'Gestion Bail',
-      startDate: new Date(currentPointer),
+      startDate: bailStart,
       durationMonths: bail.duration,
       endDate: bailEndDate,
       color: COLORS.PHASES.BAIL,
@@ -111,48 +106,42 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
     });
   }
 
-  // Le raccordement et la construction attendent la fin du CRE et du Bail (Sécurisation foncière et tarifaire)
-  const securingEndDate = new Date(Math.max(creEndDate.getTime(), bailEndDate.getTime()));
-  currentPointer = securingEndDate;
+  // Raccordement dépend d'Urba + CRE
+  const raccordementStartDate = new Date(Math.max(currentPointer.getTime(), creEndDate.getTime()));
 
-  // 5. RACCORDEMENT
+  // 4. RACCORDEMENT
   let raccDefaultDur = 6;
   if (connection === ConnectionType.INJECTION) {
     if (powerKwc <= 36) raccDefaultDur = 6;
     else if (powerKwc <= 250) raccDefaultDur = 9;
     else if (powerKwc <= 1000) raccDefaultDur = 12;
     else raccDefaultDur = 18;
-  } else {
-    raccDefaultDur = 5;
-  }
+  } else raccDefaultDur = 5;
+
   const racc = getPhaseConfig('raccordement', true, raccDefaultDur);
-  const raccStartDate = new Date(currentPointer);
-  const raccEndDate = addMonths(raccStartDate, racc.duration);
-  
+  let raccEndDate = new Date(raccordementStartDate);
   if (racc.enabled) {
+    raccEndDate = addMonths(raccordementStartDate, racc.duration);
     phases.push({
       id: 'raccordement',
       name: 'Raccordement',
-      startDate: raccStartDate,
+      startDate: new Date(raccordementStartDate),
       durationMonths: racc.duration,
       endDate: raccEndDate,
       color: COLORS.PHASES.RACCORDEMENT
     });
   }
 
-  // 6. CONSTRUCTION (Doit finir en même temps que le raccordement pour optimiser le COD)
-  let constrWorkMonths = 4;
-  if (powerKwc > 1000) constrWorkMonths = 12;
-  else if (powerKwc >= 600) constrWorkMonths = 6;
-  
+  // 5. CONSTRUCTION
+  const securityLockDate = new Date(Math.max(creEndDate.getTime(), bailEndDate.getTime()));
+  let constrWorkMonths = powerKwc > 1000 ? 12 : (powerKwc >= 600 ? 6 : 4);
   const cons = getPhaseConfig('construction', true, constrWorkMonths);
+  
   if (cons.enabled) {
-    // La construction finit 0.5 mois avant la fin du raccordement pour les tests
     const constrEnd = addMonths(raccEndDate, -0.5);
     let constrStart = new Date(constrEnd);
     let effectiveWorkDone = 0;
     
-    // Calcul à rebours en tenant compte des mois restreints
     while (effectiveWorkDone < cons.duration) {
       constrStart = addMonths(constrStart, -1);
       const month = constrStart.getMonth();
@@ -161,38 +150,35 @@ export const calculatePhases = (params: CalculationParams): Phase[] => {
       }
     }
 
-    // Sécurité : la construction ne peut pas démarrer avant la sécurisation (Bail/CRE)
-    if (constrStart < securingEndDate) {
-        const shift = securingEndDate.getTime() - constrStart.getTime();
-        constrStart = new Date(securingEndDate);
-        // On décale aussi la fin si on a dû décaler le début
-        constrEnd.setTime(constrEnd.getTime() + shift);
-        // Note: Le raccordement pourrait être impacté, mais ici on considère que la construction s'adapte
+    if (constrStart < securityLockDate) {
+        constrStart = new Date(securityLockDate);
     }
 
-    const calendaryDuration = (constrEnd.getTime() - constrStart.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+    const calDur = (constrEnd.getTime() - constrStart.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
 
     phases.push({
       id: 'construction',
       name: 'Construction',
       startDate: constrStart,
-      durationMonths: calendaryDuration,
+      durationMonths: calDur,
       endDate: constrEnd,
       color: COLORS.PHASES.CONSTRUCTION,
       isMilestone: true
     });
   }
 
-  // 7. EXPLOITATION (COD = Fin Raccordement)
-  const exp = getPhaseConfig('exploitation', true, 240); 
+  // 6. EXPLOITATION (COD = Raccordement Terminé + 1 Mois de levée de réserves/consuel)
+  const exp = getPhaseConfig('exploitation', true, 12); 
   if (exp.enabled) {
+    const codDate = addMonths(raccEndDate, 1); // La COD intervient 1 mois après la fin administrative du raccordement
     phases.push({
       id: 'exploitation',
       name: 'Exploitation',
-      startDate: raccEndDate,
+      startDate: codDate,
       durationMonths: exp.duration,
-      endDate: addMonths(raccEndDate, exp.duration),
-      color: COLORS.PHASES.EXPLOITATION
+      endDate: addMonths(codDate, exp.duration),
+      color: COLORS.PHASES.EXPLOITATION,
+      isMilestone: true // Marqué comme jalon pour le Gantt
     });
   }
 
